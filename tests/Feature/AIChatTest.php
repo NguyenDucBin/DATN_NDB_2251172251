@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AIChatTest extends TestCase
@@ -25,11 +26,145 @@ class AIChatTest extends TestCase
         ]);
     }
 
-    public function test_chatbox_uses_gemini_with_tour_context_and_conversation_history(): void
+    public function test_chatbox_answers_sa_pa_price_from_database_without_calling_gemini(): void
     {
-        $host = User::factory()->create();
-        Tour::create([
-            'host_id' => $host->id,
+        $this->createTour([
+            'name' => 'Tour săn mây Sa Pa',
+            'slug' => 'tour-san-may-sa-pa',
+            'location' => 'Sa Pa',
+            'price' => 1200000,
+            'duration_days' => 3,
+            'duration_nights' => 2,
+            'capacity' => 10,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'Tour Sa Pa giá bao nhiêu?'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Tour săn mây Sa Pa')
+                && str_contains($reply, '1.200.000 VNĐ/người')
+                && str_contains($reply, '3 ngày 2 đêm'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_answers_ha_giang_price_from_database_without_mixing_places(): void
+    {
+        $this->createTour([
+            'name' => 'Tour bản làng Hà Giang',
+            'slug' => 'tour-ban-lang-ha-giang',
+            'location' => 'Hà Giang',
+            'price' => 1000000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+            'capacity' => 5,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'giá tour Hà Giang hiện tại đang là bao nhiêu'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Tour bản làng Hà Giang')
+                && str_contains($reply, '1.000.000 VNĐ/người')
+                && ! str_contains($reply, 'Sa Pa'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_explains_when_requested_days_are_shorter_than_available_tour(): void
+    {
+        $this->createTour([
+            'name' => 'Tour săn mây Sa Pa',
+            'slug' => 'tour-san-may-sa-pa',
+            'location' => 'Sa Pa',
+            'duration_days' => 3,
+            'duration_nights' => 2,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'tôi muốn đi tour Sa Pa 1 ngày thôi có được không'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, '3 ngày 2 đêm')
+                && str_contains($reply, 'chưa có lựa chọn 1 ngày'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_answers_switching_between_sa_pa_one_day_and_ha_giang_from_database(): void
+    {
+        $this->createTour([
+            'name' => 'Tour săn mây Sa Pa',
+            'slug' => 'tour-san-may-sa-pa',
+            'location' => 'Sa Pa',
+            'price' => 1200000,
+            'duration_days' => 3,
+            'duration_nights' => 2,
+        ]);
+        $this->createTour([
+            'name' => 'Tour bản làng Hà Giang',
+            'slug' => 'tour-ban-lang-ha-giang',
+            'location' => 'Hà Giang',
+            'price' => 1000000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'tôi muốn đi tour sapa 1 ngày và chuyển sang đi tour hà giang thì thế nào'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Sa Pa')
+                && str_contains($reply, 'chưa có lựa chọn 1 ngày')
+                && str_contains($reply, 'Tour bản làng Hà Giang')
+                && str_contains($reply, '1.000.000 VNĐ/người'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_does_not_invent_a_combined_sa_pa_ha_giang_tour(): void
+    {
+        $this->createTour([
+            'name' => 'Tour săn mây Sa Pa',
+            'slug' => 'tour-san-may-sa-pa',
+            'location' => 'Sa Pa',
+        ]);
+        $this->createTour([
+            'name' => 'Tour bản làng Hà Giang',
+            'slug' => 'tour-ban-lang-ha-giang',
+            'location' => 'Hà Giang',
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'kết hợp Sa Pa và Hà Giang được không'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'chưa có tour kết hợp')
+                && str_contains($reply, 'Tour săn mây Sa Pa')
+                && str_contains($reply, 'Tour bản làng Hà Giang'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_uses_gemini_with_tour_context_and_conversation_history_for_open_questions(): void
+    {
+        $this->createTour([
             'name' => 'Tour Sa Pa kiểm thử',
             'slug' => 'tour-sa-pa-kiem-thu',
             'location' => 'Sa Pa',
@@ -38,16 +173,13 @@ class AIChatTest extends TestCase
             'duration_days' => 2,
             'duration_nights' => 1,
             'capacity' => 10,
-            'itinerary' => [],
-            'status' => 'approved',
-            'is_active' => true,
         ]);
 
         Http::fake([
             'https://generativelanguage.googleapis.com/v1beta/models/*' => Http::response([
                 'candidates' => [[
                     'content' => [
-                        'parts' => [['text' => 'Tour Sa Pa hiện có giá 1.500.000 VNĐ mỗi người.']],
+                        'parts' => [['text' => 'Bạn có thể chọn tour Sa Pa kiểm thử nếu thích văn hóa bản làng.']],
                     ],
                 ]],
             ]),
@@ -55,12 +187,12 @@ class AIChatTest extends TestCase
 
         $this->postJson(route('ai.chat'), [
             'messages' => [
-                ['role' => 'user', 'content' => 'Bạn có tour Sa Pa không?'],
-                ['role' => 'assistant', 'content' => 'Có, bạn muốn hỏi thông tin gì?'],
-                ['role' => 'user', 'content' => 'Tour đó giá bao nhiêu?'],
+                ['role' => 'user', 'content' => 'Tôi đi cùng gia đình.'],
+                ['role' => 'assistant', 'content' => 'Bạn muốn ưu tiên nghỉ dưỡng hay trải nghiệm văn hóa?'],
+                ['role' => 'user', 'content' => 'Tôi thích văn hóa bản làng, hãy tư vấn thêm.'],
             ],
         ])->assertOk()->assertJson([
-            'reply' => 'Tour Sa Pa hiện có giá 1.500.000 VNĐ mỗi người.',
+            'reply' => 'Bạn có thể chọn tour Sa Pa kiểm thử nếu thích văn hóa bản làng.',
         ]);
 
         Http::assertSent(function (Request $request) {
@@ -72,7 +204,7 @@ class AIChatTest extends TestCase
                 && $contents[0]['role'] === 'user'
                 && $contents[1]['role'] === 'model'
                 && $contents[2]['role'] === 'user'
-                && $contents[1]['parts'][0]['text'] === 'Có, bạn muốn hỏi thông tin gì?'
+                && $contents[1]['parts'][0]['text'] === 'Bạn muốn ưu tiên nghỉ dưỡng hay trải nghiệm văn hóa?'
                 && $request['generationConfig']['maxOutputTokens'] === 400
                 && str_contains($instructions, 'Tour Sa Pa kiểm thử')
                 && str_contains($instructions, '1.500.000 VNĐ/người');
@@ -103,7 +235,7 @@ class AIChatTest extends TestCase
 
         $this->postJson(route('ai.chat'), [
             'messages' => [
-                ['role' => 'user', 'content' => 'Gợi ý tour cho tôi'],
+                ['role' => 'user', 'content' => 'Bạn kể một lời chào thân thiện cho khách du lịch.'],
             ],
         ])->assertStatus(429)->assertJson([
             'message' => 'Trợ lý AI đang tạm đạt giới hạn sử dụng miễn phí. Vui lòng thử lại sau.',
@@ -118,7 +250,7 @@ class AIChatTest extends TestCase
                 ->push([
                     'candidates' => [[
                         'content' => [
-                            'parts' => [['text' => 'Tour Sa Pa hiện có thời lượng 3 ngày 2 đêm.']],
+                            'parts' => [['text' => 'Bạn nên chuẩn bị áo khoác nhẹ, giày dễ đi và giấy tờ cá nhân.']],
                         ],
                     ]],
                 ]),
@@ -126,10 +258,10 @@ class AIChatTest extends TestCase
 
         $this->postJson(route('ai.chat'), [
             'messages' => [
-                ['role' => 'user', 'content' => 'Nếu tôi đi Sa Pa 1 ngày thôi có được không?'],
+                ['role' => 'user', 'content' => 'Tôi cần chuẩn bị hành lý như thế nào cho chuyến đi vùng cao?'],
             ],
         ])->assertOk()->assertJson([
-            'reply' => 'Tour Sa Pa hiện có thời lượng 3 ngày 2 đêm.',
+            'reply' => 'Bạn nên chuẩn bị áo khoác nhẹ, giày dễ đi và giấy tờ cá nhân.',
         ]);
 
         Http::assertSentCount(2);
@@ -143,7 +275,7 @@ class AIChatTest extends TestCase
 
         $this->postJson(route('ai.chat'), [
             'messages' => [
-                ['role' => 'user', 'content' => 'Tư vấn tour cho tôi'],
+                ['role' => 'user', 'content' => 'Bạn gợi ý tôi nên chuẩn bị tâm lý gì trước chuyến đi?'],
             ],
         ])->assertStatus(503)->assertJson([
             'message' => 'Gemini đang bận hoặc quá tải tạm thời, bạn thử gửi lại sau vài giây nhé.',
@@ -195,5 +327,25 @@ class AIChatTest extends TestCase
         ])->assertUnprocessable()->assertJson([
             'message' => 'Tin nhắn cuối cùng phải là câu hỏi của người dùng.',
         ]);
+    }
+
+    private function createTour(array $overrides = []): Tour
+    {
+        $host = User::factory()->create();
+
+        return Tour::create(array_merge([
+            'host_id' => $host->id,
+            'name' => 'Tour kiểm thử',
+            'slug' => 'tour-kiem-thu-'.Str::random(6),
+            'location' => 'Sa Pa',
+            'description' => 'Khám phá bản làng và ruộng bậc thang.',
+            'price' => 1500000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+            'capacity' => 10,
+            'itinerary' => [],
+            'status' => 'approved',
+            'is_active' => true,
+        ], $overrides));
     }
 }

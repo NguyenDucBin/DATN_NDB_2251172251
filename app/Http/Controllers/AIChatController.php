@@ -6,6 +6,8 @@ use App\Models\Tour;
 use App\Services\GeminiChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class AIChatController extends Controller
@@ -24,26 +26,15 @@ class AIChatController extends Controller
             return response()->json(['message' => 'Tin nhắn cuối cùng phải là câu hỏi của người dùng.'], 422);
         }
 
-        $tourContext = Tour::query()
-            ->where('status', 'approved')
-            ->where('is_active', true)
-            ->latest()
-            ->limit(20)
-            ->get(['name', 'location', 'price', 'duration_days', 'duration_nights', 'capacity', 'description'])
-            ->map(fn (Tour $tour) => sprintf(
-                '- %s | %s | %s VNĐ/người | %d ngày %d đêm | tối đa %d khách | %s',
-                $tour->name,
-                $tour->location ?: 'Chưa cập nhật địa điểm',
-                number_format((float) $tour->price, 0, ',', '.'),
-                (int) $tour->duration_days,
-                (int) $tour->duration_nights,
-                (int) $tour->capacity,
-                str($tour->description)->squish()->limit(220),
-            ))
-            ->implode("\n");
+        $tours = $this->availableTours();
+        $databaseReply = $this->replyFromDatabase($messages, $tours);
+
+        if ($databaseReply !== null) {
+            return response()->json(['reply' => $databaseReply]);
+        }
 
         try {
-            $reply = $gemini->reply($messages->all(), $tourContext ?: '- Hiện chưa có tour nào đang mở bán.');
+            $reply = $gemini->reply($messages->all(), $this->buildTourContext($tours));
         } catch (RuntimeException $exception) {
             [$message, $status] = match ($exception->getCode()) {
                 401, 403 => ['Trợ lý AI chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.', 503],
@@ -57,5 +48,284 @@ class AIChatController extends Controller
         }
 
         return response()->json(['reply' => $reply]);
+    }
+
+    private function availableTours(): Collection
+    {
+        return Tour::query()
+            ->where('status', 'approved')
+            ->where('is_active', true)
+            ->latest()
+            ->limit(20)
+            ->get(['id', 'name', 'slug', 'location', 'price', 'duration_days', 'duration_nights', 'capacity', 'description']);
+    }
+
+    private function replyFromDatabase(Collection $messages, Collection $tours): ?string
+    {
+        $question = (string) $messages->last()['content'];
+        $normalizedQuestion = $this->normalizeText($question);
+        $conversationText = $this->normalizeText($messages->pluck('content')->implode(' '));
+
+        $mentionedPlaces = $this->mentionedPlaces($conversationText, $tours);
+        $latestPlaces = $this->mentionedPlaces($normalizedQuestion, $tours);
+
+        if ($latestPlaces !== []) {
+            $mentionedPlaces = $latestPlaces;
+        }
+
+        $hasTourIntent = $this->containsAny($normalizedQuestion, [
+            'tour', 'gia', 'bao nhieu', 'thoi luong', 'may ngay', 'may dem', 'suc chua',
+            'toi da', 'bao nhieu khach', 'con cho', 'mo ban', 'dat cho', 'dat tour', 'ket hop',
+            'ghep', 'di ca', 'chuyen sang', 'doi sang',
+        ]);
+
+        if (! $hasTourIntent && $mentionedPlaces === []) {
+            return null;
+        }
+
+        $requestedDays = $this->requestedDays($normalizedQuestion);
+        $isCombinationQuestion = count($mentionedPlaces) > 1 || $this->containsAny($normalizedQuestion, [
+            'ket hop', 'ghep', 'di ca', 'ca hai', 'chuyen sang', 'doi sang',
+        ]);
+
+        if ($mentionedPlaces === [] && $hasTourIntent) {
+            return $this->replyWithAvailableTours($tours);
+        }
+
+        if ($isCombinationQuestion) {
+            $requestedDaysOnlyAppliesToFirstPlace = $this->containsAny($normalizedQuestion, ['chuyen sang', 'doi sang']);
+
+            return $this->replyForCombination($mentionedPlaces, $tours, $requestedDays, $requestedDaysOnlyAppliesToFirstPlace);
+        }
+
+        $place = $mentionedPlaces[0] ?? null;
+        $matchingTours = $place ? $this->toursForPlace($tours, $place) : collect();
+
+        if ($matchingTours->isEmpty()) {
+            return sprintf(
+                "Hiện tại Rẻo Cao Journeys chưa có tour %s đang mở bán.\n\n%s",
+                $place,
+                $this->suggestAvailableTours($tours)
+            );
+        }
+
+        $tour = $matchingTours->first();
+
+        if ($requestedDays !== null && $requestedDays < (int) $tour->duration_days) {
+            return sprintf(
+                "Tour %s hiện có thời lượng %d ngày %d đêm, nên hệ thống chưa có lựa chọn %d ngày cho %s.\n\nBạn có thể xem tour hiện có hoặc liên hệ Host/Admin để được tư vấn lịch trình riêng.",
+                $tour->name,
+                (int) $tour->duration_days,
+                (int) $tour->duration_nights,
+                $requestedDays,
+                $place
+            );
+        }
+
+        return sprintf(
+            "Hiện tại Rẻo Cao Journeys có %s tại %s.\n\n%s\n\nBạn có thể mở trang Tour trải nghiệm để xem chi tiết và đặt tour nếu lịch trình phù hợp nhé.",
+            $tour->name,
+            $tour->location ?: $place,
+            $this->tourSummary($tour)
+        );
+    }
+
+    private function replyWithAvailableTours(Collection $tours): string
+    {
+        if ($tours->isEmpty()) {
+            return 'Hiện tại Rẻo Cao Journeys chưa có tour nào đang mở bán. Bạn vui lòng quay lại sau hoặc liên hệ Admin để được hỗ trợ.';
+        }
+
+        return "Các tour đang mở bán hiện tại gồm:\n\n"
+            .$tours->take(5)->map(fn (Tour $tour) => $this->tourSummary($tour))->implode("\n")
+            ."\n\nBạn muốn mình tư vấn kỹ tour nào hơn?";
+    }
+
+    private function replyForCombination(
+        array $places,
+        Collection $tours,
+        ?int $requestedDays,
+        bool $requestedDaysOnlyAppliesToFirstPlace = false
+    ): string {
+        $lines = [];
+        $available = collect();
+
+        foreach ($places as $index => $place) {
+            $matchingTours = $this->toursForPlace($tours, $place);
+
+            if ($matchingTours->isEmpty()) {
+                $lines[] = "- {$place}: hiện chưa có tour đang mở bán.";
+                continue;
+            }
+
+            $tour = $matchingTours->first();
+            $available->push($tour);
+
+            $shouldCheckRequestedDays = $requestedDays !== null
+                && (! $requestedDaysOnlyAppliesToFirstPlace || $index === 0);
+
+            if ($shouldCheckRequestedDays && $requestedDays < (int) $tour->duration_days) {
+                $lines[] = sprintf(
+                    '- %s: có %s nhưng thời lượng hiện tại là %d ngày %d đêm, chưa có lựa chọn %d ngày.',
+                    $place,
+                    $tour->name,
+                    (int) $tour->duration_days,
+                    (int) $tour->duration_nights,
+                    $requestedDays
+                );
+                continue;
+            }
+
+            $lines[] = $this->tourSummary($tour);
+        }
+
+        $hasCombinedTour = $available->contains(function (Tour $tour) use ($places): bool {
+            $haystack = $this->normalizeText($tour->name.' '.$tour->location.' '.$tour->description);
+
+            return collect($places)->every(fn (string $place) => str_contains($haystack, $this->normalizeText($place)));
+        });
+
+        $intro = $hasCombinedTour
+            ? 'Mình tìm thấy tour phù hợp với các điểm bạn nhắc tới:'
+            : 'Hiện tại Rẻo Cao Journeys chưa có tour kết hợp các điểm này trong một lịch trình.';
+
+        $tail = $available->isNotEmpty()
+            ? 'Bạn có thể đặt từng tour riêng theo dữ liệu hiện có, hoặc liên hệ Host/Admin để hỏi lịch trình ghép riêng.'
+            : $this->suggestAvailableTours($tours);
+
+        return $intro."\n\n".implode("\n", $lines)."\n\n".$tail;
+    }
+
+    private function toursForPlace(Collection $tours, string $place): Collection
+    {
+        $normalizedPlace = $this->normalizeText($place);
+
+        return $tours->filter(function (Tour $tour) use ($normalizedPlace): bool {
+            $haystack = $this->normalizeText($tour->name.' '.$tour->location.' '.$tour->description);
+
+            return str_contains($haystack, $normalizedPlace);
+        })->values();
+    }
+
+    private function mentionedPlaces(string $normalizedText, Collection $tours): array
+    {
+        $places = [];
+        $knownPlaces = [
+            'Sa Pa' => ['sa pa', 'sapa'],
+            'Hà Giang' => ['ha giang', 'hagiang'],
+        ];
+
+        foreach ($knownPlaces as $display => $aliases) {
+            foreach ($aliases as $alias) {
+                if (str_contains($normalizedText, $alias)) {
+                    $places[$this->normalizeText($display)] = $display;
+                    break;
+                }
+            }
+        }
+
+        foreach ($tours as $tour) {
+            $location = trim((string) $tour->location);
+
+            if ($location === '') {
+                continue;
+            }
+
+            $normalizedLocation = $this->normalizeText($location);
+
+            if (str_contains($normalizedText, $normalizedLocation)) {
+                $places[$normalizedLocation] = $location;
+            }
+        }
+
+        return array_values($places);
+    }
+
+    private function requestedDays(string $normalizedQuestion): ?int
+    {
+        if (preg_match('/\b(\d{1,2})\s*ngay\b/', $normalizedQuestion, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        $words = [
+            'mot ngay' => 1,
+            'hai ngay' => 2,
+            'ba ngay' => 3,
+            'bon ngay' => 4,
+            'nam ngay' => 5,
+        ];
+
+        foreach ($words as $word => $days) {
+            if (str_contains($normalizedQuestion, $word)) {
+                return $days;
+            }
+        }
+
+        return null;
+    }
+
+    private function buildTourContext(Collection $tours): string
+    {
+        if ($tours->isEmpty()) {
+            return '- Hiện chưa có tour nào đang mở bán.';
+        }
+
+        return $tours
+            ->map(fn (Tour $tour) => sprintf(
+                '- %s | %s | %s VNĐ/người | %d ngày %d đêm | tối đa %d khách | %s',
+                $tour->name,
+                $tour->location ?: 'Chưa cập nhật địa điểm',
+                number_format((float) $tour->price, 0, ',', '.'),
+                (int) $tour->duration_days,
+                (int) $tour->duration_nights,
+                (int) $tour->capacity,
+                str($tour->description)->squish()->limit(220),
+            ))
+            ->implode("\n");
+    }
+
+    private function suggestAvailableTours(Collection $tours): string
+    {
+        if ($tours->isEmpty()) {
+            return 'Hiện hệ thống chưa có tour nào đang mở bán.';
+        }
+
+        return "Bạn có thể tham khảo các tour đang mở bán:\n"
+            .$tours->take(4)->map(fn (Tour $tour) => $this->tourSummary($tour))->implode("\n");
+    }
+
+    private function tourSummary(Tour $tour): string
+    {
+        return sprintf(
+            '- %s (%s): %s VNĐ/người, %d ngày %d đêm, tối đa %d khách.',
+            $tour->name,
+            $tour->location ?: 'chưa cập nhật địa điểm',
+            number_format((float) $tour->price, 0, ',', '.'),
+            (int) $tour->duration_days,
+            (int) $tour->duration_nights,
+            (int) $tour->capacity
+        );
+    }
+
+    private function containsAny(string $text, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if (str_contains($text, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeText(string $text): string
+    {
+        return Str::of($text)
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9\s]+/', ' ')
+            ->replaceMatches('/\s+/', ' ')
+            ->trim()
+            ->toString();
     }
 }

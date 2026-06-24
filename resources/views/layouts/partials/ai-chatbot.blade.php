@@ -67,12 +67,12 @@
 
             <!-- Input Area -->
             <div style="padding: 12px 16px; border-top: 1px solid #e5e7eb; background: white; display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
-                <input x-ref="chatInput" x-model="userInput" @keydown.enter.prevent="sendMessage()" :disabled="isTyping" type="text" placeholder="Nhập câu hỏi của bạn..."
+                <input x-ref="chatInput" x-model="userInput" @keydown.enter.prevent="sendMessage()" :disabled="isTyping || isCoolingDown" type="text" placeholder="Nhập câu hỏi của bạn..."
                        style="flex: 1; border: 1px solid #e5e7eb; border-radius: 24px; padding: 10px 18px; font-size: 0.85rem; outline: none; transition: border-color 0.2s; background: #f9fafb;"
                        onfocus="this.style.borderColor='#D4AF37';this.style.background='white'" onblur="this.style.borderColor='#e5e7eb';this.style.background='#f9fafb'">
-                <button @click="sendMessage()" :disabled="isTyping || !userInput.trim()"
+                <button @click="sendMessage()" :disabled="isTyping || isCoolingDown || !userInput.trim()"
                         style="width: 40px; height: 40px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;"
-                        :style="!isTyping && userInput.trim() ? 'background: linear-gradient(135deg, #1E3F20, #2A5A2E); color: white; box-shadow: 0 2px 8px rgba(30,63,32,0.3);' : 'background: #e5e7eb; color: #9ca3af; cursor: not-allowed;'">
+                        :style="!isTyping && !isCoolingDown && userInput.trim() ? 'background: linear-gradient(135deg, #1E3F20, #2A5A2E); color: white; box-shadow: 0 2px 8px rgba(30,63,32,0.3);' : 'background: #e5e7eb; color: #9ca3af; cursor: not-allowed;'">
                     <i class="fa-solid fa-paper-plane" style="font-size: 0.85rem;"></i>
                 </button>
             </div>
@@ -212,6 +212,7 @@ function chatbotApp() {
         hasOpened: false,
         userInput: '',
         isTyping: false,
+        isCoolingDown: false,
         messages: [
             {
                 sender: 'bot',
@@ -236,10 +237,11 @@ function chatbotApp() {
 
         async sendMessage() {
             const text = this.userInput.trim();
-            if (!text || this.isTyping) return;
+            if (!text || this.isTyping || this.isCoolingDown) return;
 
             const requestMessages = this.messages
                 .slice(1)
+                .filter(message => !message.isError)
                 .slice(-8)
                 .map(message => ({
                     role: message.sender === 'bot' ? 'assistant' : 'user',
@@ -271,7 +273,9 @@ function chatbotApp() {
                 const data = await response.json().catch(() => ({}));
 
                 if (!response.ok || !data.reply) {
-                    throw new Error(data.message || 'Trợ lý AI hiện chưa thể phản hồi.');
+                    const error = new Error(data.message || 'Trợ lý AI hiện chưa thể phản hồi.');
+                    error.status = response.status;
+                    throw error;
                 }
 
                 this.messages.push({
@@ -280,16 +284,29 @@ function chatbotApp() {
                     time: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})
                 });
             } catch (error) {
+                if ([429, 503].includes(error.status)) {
+                    this.startCooldown();
+                }
+
                 this.messages.push({
                     sender: 'bot',
                     text: error.message || 'Không thể kết nối trợ lý AI. Vui lòng thử lại sau.',
-                    time: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})
+                    time: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}),
+                    isError: true
                 });
             } finally {
                 this.isTyping = false;
                 this.scrollToBottom();
                 this.$nextTick(() => this.$refs.chatInput?.focus());
             }
+        },
+
+        startCooldown() {
+            this.isCoolingDown = true;
+            window.setTimeout(() => {
+                this.isCoolingDown = false;
+                this.$nextTick(() => this.$refs.chatInput?.focus());
+            }, 4000);
         },
 
         scrollToBottom() {
