@@ -220,62 +220,6 @@ function chatbotApp() {
             }
         ],
 
-        // FAQ Knowledge Base
-        faqData: [
-            {
-                keywords: ['đặt tour', 'đặt chỗ', 'booking', 'đặt', 'mua tour', 'đăng ký tour', 'cách đặt', 'làm sao đặt'],
-                answer: '📋 <b>Cách đặt tour tại Rẻo Cao Journeys:</b><br><br>1. Chọn tour bạn yêu thích<br>2. Bấm nút <b>"Đặt Tour Ngay"</b><br>3. Điền thông tin và chọn ngày khởi hành<br>4. Xác nhận và thanh toán<br><br>Rất đơn giản! Bạn cần hỗ trợ thêm gì không?'
-            },
-            {
-                keywords: ['giá', 'bao nhiêu', 'chi phí', 'phí', 'tiền', 'thanh toán', 'trả tiền'],
-                answer: '💰 <b>Về giá tour:</b><br><br>Giá tour tại Rẻo Cao Journeys dao động từ <b>500.000₫ - 5.000.000₫/người</b> tùy vào điểm đến và thời lượng. Giá đã bao gồm:<br>• Ăn uống, chỗ ở<br>• Hướng dẫn viên bản địa<br>• Hoạt động trải nghiệm<br><br>Bạn có thể xem giá cụ thể ở trang chi tiết mỗi tour nhé!'
-            },
-            {
-                keywords: ['hủy', 'hoàn tiền', 'hủy tour', 'hoàn', 'refund', 'cancel', 'đổi ngày'],
-                answer: '❌ <b>Chính sách hủy tour:</b><br><br>• Hủy trước <b>7 ngày</b>: Hoàn tiền 100%<br>• Hủy trước <b>3-7 ngày</b>: Hoàn 50%<br>• Hủy trong <b>3 ngày</b>: Không hoàn tiền<br>• Có thể <b>đổi ngày</b> miễn phí 1 lần<br><br>Liên hệ chúng tôi nếu bạn cần hỗ trợ!'
-            },
-            {
-                keywords: ['sa pa', 'sapa', 'lào cai'],
-                answer: '🏔️ <b>Tour Sa Pa:</b><br><br>Sa Pa – thị trấn trong sương với ruộng bậc thang tuyệt đẹp! Các tour phổ biến:<br>• Trekking bản Cát Cát, Tả Van<br>• Chinh phục đỉnh Fansipan<br>• Homestay cùng người H\'Mông<br><br>👉 <a href="/destinations/sa-pa" style="color:#D4AF37;font-weight:600;">Xem tất cả tour Sa Pa →</a>'
-            },
-            {
-                keywords: ['hà giang', 'ha giang', 'đồng văn', 'mã pí lèng'],
-                answer: '⛰️ <b>Tour Hà Giang:</b><br><br>Hà Giang – cao nguyên đá hùng vĩ với cung đường đèo huyền thoại! Trải nghiệm nổi bật:<br>• Cung đường Mã Pí Lèng<br>• Sông Nho Quế xanh ngọc<br>• Phố cổ Đồng Văn<br>• Dinh thự Vua Mèo<br><br>👉 <a href="/destinations/ha-giang" style="color:#D4AF37;font-weight:600;">Xem tất cả tour Hà Giang →</a>'
-            },
-            {
-                keywords: ['mù cang chải', 'mu cang chai', 'ruộng bậc thang'],
-                answer: '🌾 <b>Tour Mù Cang Chải:</b><br><br>Thiên đường ruộng bậc thang! Đẹp nhất tháng 9-10 mùa lúa chín. Trải nghiệm:<br>• Ngắm ruộng bậc thang La Pán Tẩn<br>• Lễ hội Khèn Mông<br>• Paragliding ngắm thung lũng<br><br>👉 <a href="/destinations/mu-cang-chai" style="color:#D4AF37;font-weight:600;">Xem tất cả tour Mù Cang Chải →</a>'
-            },
-            {
-                keywords: ['cao bằng', 'cao bang', 'bản giốc', 'ban gioc', 'thác'],
-                answer: '💧 <b>Tour Cao Bằng:</b><br><br>Cao Bằng – vùng đất biên cương với thác Bản Giốc hùng vĩ! Điểm nhấn:<br>• Thác Bản Giốc – thác tự nhiên lớn nhất ĐNA<br>• Động Ngườm Ngao<br>• Hồ Thang Hen<br><br>👉 <a href="/destinations/cao-bang" style="color:#D4AF37;font-weight:600;">Xem tất cả tour Cao Bằng →</a>'
-            },
-            {
-                keywords: ['mộc châu', 'moc chau', 'sơn la'],
-                answer: '🌸 <b>Tour Mộc Châu:</b><br><br>Mộc Châu – thảo nguyên xanh mát với đồi chè bát ngát! Trải nghiệm:<br>• Thảo nguyên Mộc Châu<br>• Đồi chè trái tim<br>• Thác Dải Yếm<br>• Mùa hoa mận tháng 1-2<br><br>👉 <a href="/destinations/moc-chau" style="color:#D4AF37;font-weight:600;">Xem tất cả tour Mộc Châu →</a>'
-            },
-            {
-                keywords: ['thời gian', 'mùa nào', 'khi nào', 'tháng nào', 'thời tiết', 'nên đi'],
-                answer: '🗓️ <b>Thời gian tốt nhất để đi Tây Bắc:</b><br><br>• <b>Tháng 9-11:</b> Mùa lúa chín – ruộng bậc thang vàng rực<br>• <b>Tháng 1-3:</b> Mùa hoa đào, mận, cải<br>• <b>Tháng 4-5:</b> Mùa nước đổ, ruộng bậc thang lung linh<br><br>Tránh tháng 6-8 vì thường có mưa lũ. Tuy nhiên mỗi mùa đều có vẻ đẹp riêng!'
-            },
-            {
-                keywords: ['liên hệ', 'hỗ trợ', 'hotline', 'điện thoại', 'email', 'gọi'],
-                answer: '📞 <b>Liên hệ hỗ trợ:</b><br><br>• Hotline: <b>1900 xxxx</b><br>• Email: <b>hello@reocao.vn</b><br>• Fanpage: Rẻo Cao Journeys<br>• Giờ làm việc: 8:00 - 22:00 hàng ngày<br><br>Hoặc bạn có thể nhắn tin trực tiếp cho Host trong trang chi tiết tour!'
-            },
-            {
-                keywords: ['host', 'chủ nhà', 'hướng dẫn', 'guide'],
-                answer: '🏠 <b>Về Host (Chủ nhà):</b><br><br>Host là những người dân bản địa am hiểu văn hóa và địa phương. Họ sẽ:<br>• Dẫn dắt và đồng hành cùng bạn<br>• Chia sẻ câu chuyện văn hóa nguyên bản<br>• Đảm bảo an toàn suốt chuyến đi<br><br>Bạn có thể nhắn tin trực tiếp cho Host ở trang chi tiết tour!'
-            },
-            {
-                keywords: ['xin chào', 'hello', 'hi', 'chào', 'alo'],
-                answer: 'Xin chào! 😊 Rất vui được gặp bạn! Tôi có thể giúp bạn:<br><br>• 🏔️ Tìm tour theo điểm đến<br>• 💰 Tư vấn giá và thanh toán<br>• 📋 Hướng dẫn đặt tour<br>• ❌ Chính sách hủy/hoàn tiền<br><br>Bạn muốn hỏi gì nhé?'
-            },
-            {
-                keywords: ['cảm ơn', 'thank', 'thanks', 'tks'],
-                answer: 'Không có chi! 😊 Rất vui được giúp bạn. Nếu có thêm câu hỏi nào, đừng ngại hỏi tôi nhé! Chúc bạn có một chuyến đi Tây Bắc thật tuyệt vời! 🏔️✨'
-            }
-        ],
-
         init() {
             this.$watch('isOpen', (val) => {
                 if (val) {
@@ -346,35 +290,6 @@ function chatbotApp() {
                 this.scrollToBottom();
                 this.$nextTick(() => this.$refs.chatInput?.focus());
             }
-        },
-
-        getResponse(input) {
-            const lowerInput = input.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-            // Search through FAQ data
-            let bestMatch = null;
-            let bestScore = 0;
-
-            for (const faq of this.faqData) {
-                let score = 0;
-                for (const keyword of faq.keywords) {
-                    const normalizedKeyword = keyword.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    if (lowerInput.includes(normalizedKeyword)) {
-                        score += normalizedKeyword.length; // Longer matches = better
-                    }
-                }
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = faq;
-                }
-            }
-
-            if (bestMatch && bestScore > 0) {
-                return bestMatch.answer;
-            }
-
-            // Default response
-            return '🤔 Xin lỗi, tôi chưa hiểu rõ câu hỏi của bạn. Bạn có thể hỏi tôi về:<br><br>• <b>Điểm đến</b>: Sa Pa, Hà Giang, Mù Cang Chải...<br>• <b>Đặt tour</b>: Cách đặt, giá cả, thanh toán<br>• <b>Chính sách</b>: Hủy tour, hoàn tiền<br>• <b>Thời gian</b>: Mùa nào nên đi<br><br>Hoặc liên hệ hotline <b>1900 xxxx</b> để được hỗ trợ trực tiếp!';
         },
 
         scrollToBottom() {

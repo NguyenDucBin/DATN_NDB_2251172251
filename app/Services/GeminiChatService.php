@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -19,36 +20,27 @@ class GeminiChatService
 
         $model = trim((string) config('services.gemini.model', 'gemini-2.5-flash-lite'));
 
-        try {
-            $response = Http::baseUrl(rtrim((string) config('services.gemini.base_url'), '/'))
-                ->withHeaders(['x-goog-api-key' => $apiKey])
-                ->acceptJson()
-                ->asJson()
-                ->timeout((int) config('services.gemini.timeout', 30))
-                ->post("/models/{$model}:generateContent", [
-                    'system_instruction' => [
-                        'parts' => [['text' => $this->instructions($tourContext)]],
-                    ],
-                    'contents' => collect($messages)->map(fn (array $message) => [
-                        'role' => $message['role'] === 'assistant' ? 'model' : 'user',
-                        'parts' => [['text' => $message['content']]],
-                    ])->values()->all(),
-                    'generationConfig' => [
-                        'maxOutputTokens' => 400,
-                    ],
-                ]);
-        } catch (ConnectionException $exception) {
-            Log::warning('Gemini chat connection failed.', [
-                'exception' => $exception::class,
-            ]);
+        $payload = [
+            'system_instruction' => [
+                'parts' => [['text' => $this->instructions($tourContext)]],
+            ],
+            'contents' => collect($messages)->map(fn (array $message) => [
+                'role' => $message['role'] === 'assistant' ? 'model' : 'user',
+                'parts' => [['text' => $message['content']]],
+            ])->values()->all(),
+            'generationConfig' => [
+                'maxOutputTokens' => 400,
+            ],
+        ];
 
-            throw new RuntimeException('Gemini API connection failed.', 503, $exception);
-        }
+        $response = $this->sendWithRetry($model, $apiKey, $payload);
 
         if ($response->failed()) {
             Log::warning('Gemini chat request failed.', [
                 'status' => $response->status(),
                 'request_id' => $response->header('x-request-id'),
+                'finish_reason' => $response->json('candidates.0.finishReason'),
+                'prompt_feedback' => $response->json('promptFeedback'),
             ]);
 
             throw new RuntimeException('Gemini API request failed.', $response->status());
@@ -63,6 +55,12 @@ class GeminiChatService
             $wasBlocked = filled($response->json('promptFeedback.blockReason'))
                 || in_array($response->json('candidates.0.finishReason'), ['SAFETY', 'RECITATION', 'PROHIBITED_CONTENT'], true);
 
+            Log::warning('Gemini chat returned no text.', [
+                'finish_reason' => $response->json('candidates.0.finishReason'),
+                'prompt_feedback' => $response->json('promptFeedback'),
+                'was_blocked' => $wasBlocked,
+            ]);
+
             throw new RuntimeException(
                 $wasBlocked ? 'Gemini blocked the response.' : 'Gemini returned an empty response.',
                 $wasBlocked ? 422 : 503,
@@ -70,6 +68,43 @@ class GeminiChatService
         }
 
         return trim($reply);
+    }
+
+    private function sendWithRetry(string $model, string $apiKey, array $payload): Response
+    {
+        $attempt = 0;
+
+        while (true) {
+            try {
+                $response = Http::baseUrl(rtrim((string) config('services.gemini.base_url'), '/'))
+                    ->withHeaders(['x-goog-api-key' => $apiKey])
+                    ->acceptJson()
+                    ->asJson()
+                    ->timeout((int) config('services.gemini.timeout', 30))
+                    ->post("/models/{$model}:generateContent", $payload);
+            } catch (ConnectionException $exception) {
+                if ($attempt === 0) {
+                    $attempt++;
+                    usleep(250000);
+                    continue;
+                }
+
+                Log::warning('Gemini chat connection failed.', [
+                    'exception' => $exception::class,
+                    'attempts' => $attempt + 1,
+                ]);
+
+                throw new RuntimeException('Gemini API connection failed.', 503, $exception);
+            }
+
+            if ($response->status() === 503 && $attempt === 0) {
+                $attempt++;
+                usleep(250000);
+                continue;
+            }
+
+            return $response;
+        }
     }
 
     private function instructions(string $tourContext): string

@@ -110,6 +110,48 @@ class AIChatTest extends TestCase
         ]);
     }
 
+    public function test_chatbox_retries_once_when_gemini_is_temporarily_unavailable(): void
+    {
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/models/*' => Http::sequence()
+                ->push([], 503)
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [['text' => 'Tour Sa Pa hiện có thời lượng 3 ngày 2 đêm.']],
+                        ],
+                    ]],
+                ]),
+        ]);
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'Nếu tôi đi Sa Pa 1 ngày thôi có được không?'],
+            ],
+        ])->assertOk()->assertJson([
+            'reply' => 'Tour Sa Pa hiện có thời lượng 3 ngày 2 đêm.',
+        ]);
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_chatbox_reports_a_clear_message_when_gemini_stays_unavailable(): void
+    {
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/models/*' => Http::response([], 503),
+        ]);
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'Tư vấn tour cho tôi'],
+            ],
+        ])->assertStatus(503)->assertJson([
+            'message' => 'Gemini đang bận hoặc quá tải tạm thời, bạn thử gửi lại sau vài giây nhé.',
+        ]);
+
+        Http::assertSentCount(2);
+    }
+
     public function test_chatbox_reports_a_blocked_response_safely(): void
     {
         Http::fake([
@@ -140,7 +182,7 @@ class AIChatTest extends TestCase
                 ['role' => 'user', 'content' => 'Xin chào'],
             ],
         ])->assertStatus(503)->assertJson([
-            'message' => 'Trợ lý AI hiện chưa thể phản hồi. Vui lòng thử lại sau.',
+            'message' => 'Gemini đang bận hoặc quá tải tạm thời, bạn thử gửi lại sau vài giây nhé.',
         ]);
     }
 

@@ -49,6 +49,7 @@ class AIChatController extends Controller
                 401, 403 => ['Trợ lý AI chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.', 503],
                 429 => ['Trợ lý AI đang tạm đạt giới hạn sử dụng miễn phí. Vui lòng thử lại sau.', 429],
                 422 => ['Trợ lý AI không thể trả lời nội dung này. Bạn hãy thử diễn đạt câu hỏi khác.', 422],
+                503 => ['Gemini đang bận hoặc quá tải tạm thời, bạn thử gửi lại sau vài giây nhé.', 503],
                 default => ['Trợ lý AI hiện chưa thể phản hồi. Vui lòng thử lại sau.', 503],
             };
 
