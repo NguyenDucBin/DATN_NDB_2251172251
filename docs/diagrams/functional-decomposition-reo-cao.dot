@@ -1,0 +1,135 @@
+digraph FunctionalDecomposition {
+    graph [
+        rankdir=TB,
+        bgcolor="white",
+        pad="0.25",
+        nodesep="0.35",
+        ranksep="0.42",
+        splines=ortho,
+        fontname="Arial",
+        labelloc="t",
+        label="BIỂU ĐỒ PHÂN RÃ CHỨC NĂNG HỆ THỐNG RẺO CAO JOURNEYS",
+        fontsize=20
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        fontname="Arial",
+        fontsize=10,
+        color="#64748b",
+        fillcolor="white",
+        fontcolor="#172033",
+        penwidth=1.1,
+        margin="0.12,0.08"
+    ];
+
+    edge [color="#64748b", penwidth=1.2, arrowhead=none];
+
+    system [
+        label="XÂY DỰNG WEBSITE DU LỊCH TRẢI NGHIỆM\nVĂN HÓA NÔNG NGHIỆP VÙNG NÚI VÀ TRUNG DU PHÍA BẮC",
+        fillcolor="#facc15",
+        color="#854d0e",
+        fontcolor="#422006",
+        fontsize=14,
+        penwidth=1.5,
+        margin="0.22,0.14"
+    ];
+
+    subgraph cluster_tourist {
+        label="PHÂN HỆ KHÁCH DU LỊCH (TOURIST)";
+        color="#3b82f6";
+        fillcolor="#eff6ff";
+        style="rounded,filled";
+        penwidth=1.4;
+        fontname="Arial Bold";
+        fontsize=12;
+        fontcolor="#1e3a8a";
+        margin=16;
+
+        tourist [label="Khách du lịch", fillcolor="#2563eb", color="#1d4ed8", fontcolor="white", fontsize=12, penwidth=1.4];
+
+        tourist_functions [shape=plain, label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#2563eb" BGCOLOR="white">
+                <TR><TD BGCOLOR="#bfdbfe"><B>1. Quản lý tài khoản</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Đăng ký Tourist hoặc Host<BR ALIGN="LEFT"/>Đăng nhập thường hoặc Google<BR ALIGN="LEFT"/>Cập nhật hồ sơ và ảnh đại diện<BR ALIGN="LEFT"/>Đổi mật khẩu và bảo mật</TD></TR>
+                <TR><TD BGCOLOR="#bfdbfe"><B>2. Khám phá tour và nội dung</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Tìm kiếm và lọc tour<BR ALIGN="LEFT"/>Xem chi tiết tour<BR ALIGN="LEFT"/>Xem bài viết và điểm đến</TD></TR>
+                <TR><TD BGCOLOR="#bfdbfe"><B>3. Booking và thanh toán</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Chọn ngày và số khách<BR ALIGN="LEFT"/>Kiểm tra số chỗ còn lại<BR ALIGN="LEFT"/>Áp dụng mã giảm giá<BR ALIGN="LEFT"/>Tạo booking<BR ALIGN="LEFT"/>Thanh toán chuyển khoản hoặc VNPay</TD></TR>
+                <TR><TD BGCOLOR="#bfdbfe"><B>4. Quản lý giao dịch</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem lịch sử và trạng thái booking<BR ALIGN="LEFT"/>Gửi yêu cầu hoàn tiền</TD></TR>
+                <TR><TD BGCOLOR="#bfdbfe"><B>5. Tương tác và hỗ trợ</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Lưu hoặc bỏ tour yêu thích<BR ALIGN="LEFT"/>Đánh giá tour đã hoàn tất<BR ALIGN="LEFT"/>Nhắn tin với Host<BR ALIGN="LEFT"/>Tư vấn bằng Gemini chatbot</TD></TR>
+            </TABLE>
+        >];
+
+        tourist -> tourist_functions [color="#2563eb"];
+    }
+
+    subgraph cluster_host {
+        label="PHÂN HỆ CHỦ CƠ SỞ (HOST)";
+        color="#16a34a";
+        fillcolor="#f0fdf4";
+        style="rounded,filled";
+        penwidth=1.4;
+        fontname="Arial Bold";
+        fontsize=12;
+        fontcolor="#14532d";
+        margin=16;
+
+        host [label="Chủ cơ sở", fillcolor="#16a34a", color="#15803d", fontcolor="white", fontsize=12, penwidth=1.4];
+
+        host_functions [shape=plain, label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#16a34a" BGCOLOR="white">
+                <TR><TD BGCOLOR="#bbf7d0"><B>1. Quản lý tài khoản Host</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Đăng ký yêu cầu Host<BR ALIGN="LEFT"/>Chờ Admin xét duyệt<BR ALIGN="LEFT"/>Đăng nhập Host<BR ALIGN="LEFT"/>Cập nhật hồ sơ cá nhân</TD></TR>
+                <TR><TD BGCOLOR="#bbf7d0"><B>2. Quản lý tour</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem danh sách tour sở hữu<BR ALIGN="LEFT"/>Thêm, sửa hoặc xóa tour<BR ALIGN="LEFT"/>Quản lý ảnh và lịch trình<BR ALIGN="LEFT"/>Gửi tour chờ Admin duyệt</TD></TR>
+                <TR><TD BGCOLOR="#bbf7d0"><B>3. Quản lý booking</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem danh sách booking<BR ALIGN="LEFT"/>Xác nhận booking đã thanh toán<BR ALIGN="LEFT"/>Đánh dấu booking hoàn tất<BR ALIGN="LEFT"/>Hủy booking</TD></TR>
+                <TR><TD BGCOLOR="#bbf7d0"><B>4. Hỗ trợ khách hàng</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem hộp thư<BR ALIGN="LEFT"/>Nhận và gửi tin nhắn với khách</TD></TR>
+            </TABLE>
+        >];
+
+        host -> host_functions [color="#16a34a"];
+    }
+
+    subgraph cluster_admin {
+        label="PHÂN HỆ QUẢN TRỊ VIÊN (ADMIN)";
+        color="#dc2626";
+        fillcolor="#fef2f2";
+        style="rounded,filled";
+        penwidth=1.4;
+        fontname="Arial Bold";
+        fontsize=12;
+        fontcolor="#7f1d1d";
+        margin=16;
+
+        admin [label="Quản trị viên", fillcolor="#dc2626", color="#b91c1c", fontcolor="white", fontsize=12, penwidth=1.4];
+
+        admin_functions [shape=plain, label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#dc2626" BGCOLOR="white">
+                <TR><TD BGCOLOR="#fecaca"><B>1. Quản lý người dùng</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem, thêm và sửa tài khoản<BR ALIGN="LEFT"/>Duyệt hoặc từ chối yêu cầu Host<BR ALIGN="LEFT"/>Khóa hoặc mở khóa tài khoản</TD></TR>
+                <TR><TD BGCOLOR="#fecaca"><B>2. Kiểm duyệt tour</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem danh sách tour chờ duyệt<BR ALIGN="LEFT"/>Phê duyệt hoặc từ chối tour</TD></TR>
+                <TR><TD BGCOLOR="#fecaca"><B>3. Quản lý giao dịch</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem danh sách giao dịch<BR ALIGN="LEFT"/>Xác nhận đã thanh toán<BR ALIGN="LEFT"/>Hủy giao dịch</TD></TR>
+                <TR><TD BGCOLOR="#fecaca"><B>4. Quản lý hoàn tiền</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem yêu cầu hoàn tiền<BR ALIGN="LEFT"/>Chấp nhận hoặc từ chối hoàn tiền</TD></TR>
+                <TR><TD BGCOLOR="#fecaca"><B>5. Nội dung và khuyến mãi</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Thêm, sửa hoặc xóa bài viết<BR ALIGN="LEFT"/>Thêm, sửa hoặc xóa mã giảm giá</TD></TR>
+                <TR><TD BGCOLOR="#fecaca"><B>6. Quản lý hệ thống</B></TD></TR>
+                <TR><TD ALIGN="LEFT">Xem dashboard quản trị<BR ALIGN="LEFT"/>Theo dõi doanh thu và hoạt động</TD></TR>
+            </TABLE>
+        >];
+
+        admin -> admin_functions [color="#dc2626"];
+    }
+
+    system -> tourist [color="#2563eb", penwidth=1.5];
+    system -> host [color="#16a34a", penwidth=1.5];
+    system -> admin [color="#dc2626", penwidth=1.5];
+}

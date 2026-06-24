@@ -1,0 +1,352 @@
+digraph ReoCaoClassDiagram {
+    graph [
+        charset="UTF-8",
+        bgcolor="#FFFFFF",
+        rankdir=TB,
+        splines=ortho,
+        nodesep=0.28,
+        ranksep=0.78,
+        pad=0.25,
+        margin=0,
+        compound=true,
+        newrank=true,
+        fontname="Arial",
+        fontsize=20,
+        fontcolor="#172033",
+        label="BIỂU ĐỒ LỚP MIỀN NGHIỆP VỤ - RẺO CAO JOURNEYS",
+        labelloc=t,
+        labeljust=c
+    ];
+
+    node [shape=plain, fontname="Arial"];
+    edge [
+        fontname="Arial",
+        fontsize=9,
+        color="#52606D",
+        fontcolor="#374151",
+        arrowsize=0.7,
+        penwidth=1.1,
+        labeldistance=1.6
+    ];
+
+    subgraph cluster_identity {
+        label="TÀI KHOẢN VÀ PHÂN QUYỀN";
+        color="#93C5FD";
+        bgcolor="#F8FBFF";
+        style="rounded";
+        fontname="Arial";
+        fontsize=13;
+        fontcolor="#1E3A5F";
+        margin=16;
+
+        User [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#45647E" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DCEEFF"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">User</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + name: string<BR ALIGN="LEFT"/>
+                    + email: string<BR ALIGN="LEFT"/>
+                    + phone: string?<BR ALIGN="LEFT"/>
+                    + birthday: date?<BR ALIGN="LEFT"/>
+                    + address: string?<BR ALIGN="LEFT"/>
+                    + avatar: string?<BR ALIGN="LEFT"/>
+                    + email_verified_at: datetime?<BR ALIGN="LEFT"/>
+                    - password: string
+                </FONT></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + isLocked(): bool<BR ALIGN="LEFT"/>
+                    + hostApprovalStatus(): string<BR ALIGN="LEFT"/>
+                    + hasPendingHostRequest(): bool<BR ALIGN="LEFT"/>
+                    + avatarUrl(size): string
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Role [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#45647E" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DCEEFF"><FONT POINT-SIZE="10">«Spatie Model»</FONT><BR/><B><FONT POINT-SIZE="14">Role</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + name: string<BR ALIGN="LEFT"/>
+                    + guard_name: string
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Permission [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#45647E" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DCEEFF"><FONT POINT-SIZE="10">«Spatie Model»</FONT><BR/><B><FONT POINT-SIZE="14">Permission</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + name: string<BR ALIGN="LEFT"/>
+                    + guard_name: string
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+    }
+
+    subgraph cluster_tour_content {
+        label="TOUR VÀ NỘI DUNG";
+        color="#86C7A3";
+        bgcolor="#F8FCF9";
+        style="rounded";
+        fontname="Arial";
+        fontsize=13;
+        fontcolor="#194D33";
+        margin=16;
+
+        Tour [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Tour</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + host_id: bigint<BR ALIGN="LEFT"/>
+                    + name: string<BR ALIGN="LEFT"/>
+                    + slug: string<BR ALIGN="LEFT"/>
+                    + location: string?<BR ALIGN="LEFT"/>
+                    + description: text?<BR ALIGN="LEFT"/>
+                    + price: decimal<BR ALIGN="LEFT"/>
+                    + duration_days: int<BR ALIGN="LEFT"/>
+                    + duration_nights: int<BR ALIGN="LEFT"/>
+                    + capacity: int<BR ALIGN="LEFT"/>
+                    + itinerary: array<BR ALIGN="LEFT"/>
+                    + highlights: array?<BR ALIGN="LEFT"/>
+                    + included: array?<BR ALIGN="LEFT"/>
+                    + policies: array?<BR ALIGN="LEFT"/>
+                    + status: enum<BR ALIGN="LEFT"/>
+                    + is_active: bool
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Image [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Image</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + path: string<BR ALIGN="LEFT"/>
+                    + imageable_type: string<BR ALIGN="LEFT"/>
+                    + imageable_id: bigint
+                </FONT></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + url(): string<BR ALIGN="LEFT"/>
+                    + existsOnPublicDisk(): bool
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Review [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Review</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + user_id: bigint<BR ALIGN="LEFT"/>
+                    + tour_id: bigint<BR ALIGN="LEFT"/>
+                    + rating: int<BR ALIGN="LEFT"/>
+                    + comment: text?
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Favorite [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Favorite</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + user_id: bigint<BR ALIGN="LEFT"/>
+                    + tour_id: bigint
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Message [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Message</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + sender_id: bigint<BR ALIGN="LEFT"/>
+                    + receiver_id: bigint<BR ALIGN="LEFT"/>
+                    + content: text
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Post [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Post</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + user_id: bigint<BR ALIGN="LEFT"/>
+                    + title: string<BR ALIGN="LEFT"/>
+                    + slug: string<BR ALIGN="LEFT"/>
+                    + content: text<BR ALIGN="LEFT"/>
+                    + image: string?<BR ALIGN="LEFT"/>
+                    + status: enum
+                </FONT></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + imageUrl(fallback): string
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Coupon [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#3F6B55" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#DDF4E6"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Coupon</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + code: string<BR ALIGN="LEFT"/>
+                    + discount_type: enum<BR ALIGN="LEFT"/>
+                    + discount_amount: decimal<BR ALIGN="LEFT"/>
+                    + usage_limit: int?<BR ALIGN="LEFT"/>
+                    + used_count: int<BR ALIGN="LEFT"/>
+                    + valid_from: datetime?<BR ALIGN="LEFT"/>
+                    + valid_until: datetime?<BR ALIGN="LEFT"/>
+                    + is_active: bool
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+    }
+
+    subgraph cluster_booking {
+        label="BOOKING, THANH TOÁN VÀ HOÀN TIỀN";
+        color="#E7B75E";
+        bgcolor="#FFFCF5";
+        style="rounded";
+        fontname="Arial";
+        fontsize=13;
+        fontcolor="#6B4612";
+        margin=16;
+
+        Booking [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#85601F" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#FFF0C9"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Booking</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + user_id: bigint<BR ALIGN="LEFT"/>
+                    + tour_id: bigint<BR ALIGN="LEFT"/>
+                    + start_date: date<BR ALIGN="LEFT"/>
+                    + number_of_people: int<BR ALIGN="LEFT"/>
+                    + total_price: decimal<BR ALIGN="LEFT"/>
+                    + status: enum<BR ALIGN="LEFT"/>
+                    + payment_status: string<BR ALIGN="LEFT"/>
+                    + payment_method: string?
+                </FONT></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + statusLabel(): string<BR ALIGN="LEFT"/>
+                    + paymentStatusLabel(): string<BR ALIGN="LEFT"/>
+                    + canBeConfirmedByHost(): bool<BR ALIGN="LEFT"/>
+                    + canBeCompletedByHost(): bool<BR ALIGN="LEFT"/>
+                    + canBeCancelledByHost(): bool<BR ALIGN="LEFT"/>
+                    + canRequestRefund(): bool<BR ALIGN="LEFT"/>
+                    + hasPendingRefundRequest(): bool
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        Refund [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#85601F" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#FFF0C9"><FONT POINT-SIZE="10">«Model»</FONT><BR/><B><FONT POINT-SIZE="14">Refund</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + id: bigint<BR ALIGN="LEFT"/>
+                    + booking_id: bigint<BR ALIGN="LEFT"/>
+                    + amount: decimal<BR ALIGN="LEFT"/>
+                    + reason: text?<BR ALIGN="LEFT"/>
+                    + status: enum
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+    }
+
+    subgraph cluster_services {
+        label="DỊCH VỤ NGHIỆP VỤ";
+        color="#C4A7E7";
+        bgcolor="#FCFAFF";
+        style="rounded";
+        fontname="Arial";
+        fontsize=13;
+        fontcolor="#57367A";
+        margin=16;
+
+        BookingService [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#73558F" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#EEE2FA"><FONT POINT-SIZE="10">«Service»</FONT><BR/><B><FONT POINT-SIZE="14">BookingService</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + create(user, tourId, data): Booking<BR ALIGN="LEFT"/>
+                    - applyCoupon(subtotal, code): array
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        BookingWorkflowService [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#73558F" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#EEE2FA"><FONT POINT-SIZE="10">«Service»</FONT><BR/><B><FONT POINT-SIZE="14">BookingWorkflowService</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + markPaid(booking): bool<BR ALIGN="LEFT"/>
+                    + confirm(booking): Booking<BR ALIGN="LEFT"/>
+                    + complete(booking): Booking<BR ALIGN="LEFT"/>
+                    + cancel(booking, reason): bool<BR ALIGN="LEFT"/>
+                    + requestRefund(booking, reason): Refund<BR ALIGN="LEFT"/>
+                    + processRefund(refund, status): Refund
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+
+        GeminiChatService [label=<
+            <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#73558F" BGCOLOR="#FFFFFF">
+                <TR><TD BGCOLOR="#EEE2FA"><FONT POINT-SIZE="10">«Service»</FONT><BR/><B><FONT POINT-SIZE="14">GeminiChatService</FONT></B></TD></TR>
+                <TR><TD ALIGN="LEFT"><FONT FACE="Courier New" POINT-SIZE="9">
+                    + reply(messages, tourContext): string<BR ALIGN="LEFT"/>
+                    - instructions(tourContext): string
+                </FONT></TD></TR>
+            </TABLE>
+        >];
+    }
+
+    // Các rank và cạnh vô hình giữ bố cục ổn định khi render.
+    { rank=same; Role; User; Permission; }
+    Role -> User -> Permission [style=invis, weight=100];
+
+    { rank=same; Coupon; Review; Tour; Favorite; }
+    Coupon -> Review -> Tour -> Favorite [style=invis, weight=100];
+
+    { rank=same; Image; Message; Post; }
+    Image -> Message -> Post [style=invis, weight=100];
+
+    { rank=same; Booking; Refund; }
+    Booking -> Refund [style=invis, weight=100];
+
+    { rank=same; BookingService; BookingWorkflowService; GeminiChatService; Legend; }
+    BookingService -> BookingWorkflowService -> GeminiChatService -> Legend [style=invis, weight=100];
+
+    // Quan hệ miền nghiệp vụ.
+    User:s -> Tour:n [dir=none, taillabel="1", headlabel="0..*", xlabel="host"];
+    User:e -> Booking:n [dir=none, taillabel="1", headlabel="0..*"];
+    Tour:e -> Booking:w [dir=none, taillabel="1", headlabel="0..*"];
+    Booking:e -> Refund:w [dir=none, taillabel="1", headlabel="0..*"];
+
+    Tour:s -> Image:n [dir=none, taillabel="1", headlabel="0..*", xlabel="images / imageable\n«polymorphic»"];
+    User:s -> Review:n [dir=none, taillabel="1", headlabel="0..*"];
+    Tour:w -> Review:e [dir=none, taillabel="1", headlabel="0..*"];
+    User:sw -> Favorite:n [dir=none, taillabel="1", headlabel="0..*"];
+    Tour:w -> Favorite:e [dir=none, taillabel="1", headlabel="0..*"];
+    User:w -> Post:n [dir=none, taillabel="1", headlabel="0..*", xlabel="author"];
+    User:s -> Message:n [dir=none, taillabel="1", headlabel="0..*", xlabel="sender", color="#2B6CB0", fontcolor="#2B6CB0"];
+    User:se -> Message:n [dir=none, taillabel="1", headlabel="0..*", xlabel="receiver", color="#9B2C2C", fontcolor="#9B2C2C", style=dotted, constraint=false];
+
+    // Quan hệ phân quyền thông qua các bảng trung gian của Spatie.
+    User:e -> Role:w [dir=none, taillabel="0..*", headlabel="0..*", xlabel="model_has_roles", style=dashed, color="#4F6D8A"];
+    User:e -> Permission:w [dir=none, taillabel="0..*", headlabel="0..*", xlabel="model_has_permissions", style=dashed, color="#4F6D8A"];
+    Role:e -> Permission:w [dir=none, taillabel="0..*", headlabel="0..*", xlabel="role_has_permissions", style=dashed, color="#4F6D8A"];
+
+    // Dependency từ service đến model được xử lý trực tiếp.
+    BookingService -> User [style=dashed, arrowhead=vee, xlabel="đặt tour"];
+    BookingService -> Tour [style=dashed, arrowhead=vee, xlabel="khóa và kiểm tra"];
+    BookingService -> Booking [style=dashed, arrowhead=vee, xlabel="tạo"];
+    BookingService -> Coupon [style=dashed, arrowhead=vee, xlabel="áp dụng"];
+    BookingWorkflowService -> Booking [style=dashed, arrowhead=vee, xlabel="chuyển trạng thái"];
+    BookingWorkflowService -> Refund [style=dashed, arrowhead=vee, xlabel="tạo / xử lý"];
+
+    Legend [shape=note, style="filled", fillcolor="#F7F7F8", color="#7A7F87", fontname="Arial", fontsize=9,
+        label="CHÚ GIẢI\n────────────\nNét liền: association\nNét đứt: dependency / bảng trung gian\n1, 0..*: multiplicity\n+ public    - private"];
+
+}
