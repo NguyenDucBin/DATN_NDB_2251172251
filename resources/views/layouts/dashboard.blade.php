@@ -7,6 +7,8 @@
 
     <title>{{ config('app.name', 'Reo Cao Journeys') }} - Dashboard</title>
 
+    @include('layouts.partials.font-preload')
+
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

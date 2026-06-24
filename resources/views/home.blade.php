@@ -18,7 +18,7 @@
             <span class="inline-block py-1 px-3 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs sm:text-sm font-medium tracking-widest uppercase mb-5 sm:mb-6 animate-fade-in-up border border-white/30">
                 Khám Phá Tây Bắc
             </span>
-            <h1 class="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-5 sm:mb-6 drop-shadow-lg leading-tight font-serif">
+            <h1 class="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-5 sm:mb-6 drop-shadow-lg leading-tight">
                 <span class="block">Tây Bắc Gọi Mời</span>
                 <span class="mt-1 block text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB]">Chạm Vào Linh Hồn Của Đá Và Mây</span>
             </h1>
@@ -79,7 +79,7 @@
                         <div class="h-px w-12 bg-[#D4AF37]"></div>
                         <span class="text-[#D4AF37] uppercase tracking-widest text-sm font-bold">Câu Chuyện Vùng Đất</span>
                     </div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-8 font-serif leading-tight">Nhịp Đập Nơi Rẻo Cao</h2>
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">Nhịp Đập Nơi Rẻo Cao</h2>
                     <div class="prose prose-lg text-gray-600 mb-10">
                         <p class="leading-relaxed">
                             Núi rừng phía Bắc không chỉ có cảnh sắc hùng vĩ mà còn là cái nôi ấp ủ những giá trị văn hóa ngàn đời của 54 dân tộc anh em. Từ nếp nhà sàn đơn sơ vương khói bếp, điệu múa xòe hoa uyển chuyển của cô gái Thái, đến tiếng chày giã gạo thâu đêm. 
@@ -104,7 +104,7 @@
             <div class="flex justify-between items-end mb-12">
                 <div class="max-w-2xl">
                     <span class="text-[#D4AF37] uppercase tracking-widest text-sm font-bold block mb-3">Vùng Đất Kỳ Thú</span>
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 font-serif">Khám Phá Điểm Đến</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Khám Phá Điểm Đến</h2>
                 </div>
                 <div class="hidden md:block">
                     <a href="{{ route('magazine.index') }}" class="text-[#1E3F20] font-semibold hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
@@ -285,7 +285,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <span class="text-[#D4AF37] uppercase tracking-widest text-sm font-bold block mb-4">Gợi Ý Hành Trình</span>
-                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-serif">Trải Nghiệm Độc Bản</h2>
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Trải Nghiệm Độc Bản</h2>
                 <p class="text-gray-600 text-lg">Những cung đường được thiết kế tinh tế, đưa bạn len lỏi vào trái tim của đá và mây.</p>
             </div>
 
@@ -376,7 +376,7 @@
             <div class="flex flex-col lg:flex-row gap-16 items-center">
                 <div class="lg:w-1/3">
                     <span class="text-[#D4AF37] uppercase tracking-widest text-sm font-bold block mb-4">Khám Phá Đặc Sản</span>
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 font-serif leading-tight">Mang Chút Tình Vùng Cao Về Phố</h2>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">Mang Chút Tình Vùng Cao Về Phố</h2>
                     <p class="text-gray-300 text-lg leading-relaxed mb-8">
                         Gói trọn tinh hoa của núi rừng qua những dải thịt trâu gác bếp đậm vị sương gió, những búp chè Shan tuyết cổ thụ ngậm sương mai, hay hương mắc khén, hạt dổi nồng nàn.
                     </p>

@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Rẻo Cao Journeys - Chạm vào nguyên bản')</title>
+    @include('layouts.partials.font-preload')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="overflow-x-hidden">
+<body class="font-sans antialiased overflow-x-hidden">
 
     @include('layouts.partials.client-header')
 
