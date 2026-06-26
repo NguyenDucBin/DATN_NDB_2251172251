@@ -13,7 +13,10 @@ class HostTourController extends Controller
 {
     public function index()
     {
-        $tours = Tour::where('host_id', auth()->id())->latest()->paginate(10);
+        $tours = Tour::where('host_id', auth()->id())
+            ->withCount('bookings')
+            ->latest()
+            ->paginate(10);
 
         return view('host.tours.index', compact('tours'));
     }

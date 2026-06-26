@@ -9,6 +9,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="p-4 mb-6 text-sm text-red-700 bg-red-100 rounded-lg shadow-sm" role="alert">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="flex justify-end mb-4">
         <a href="{{ route('host.tours.create') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white transition-colors bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
             <i class="fa-solid fa-plus mr-2"></i>
@@ -37,7 +43,7 @@
                                 <div class="text-xs text-gray-500">{{ $tour->slug }}</div>
                             </td>
                             <td class="px-6 py-4 font-semibold text-emerald-600">
-                                {{ number_format($tour->price, 0, ',', '.') }} ₫
+                                {{ number_format($tour->price, 0, ',', '.') }} đ
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600">
                                 Tối đa {{ $tour->capacity }} khách
@@ -68,13 +74,20 @@
                                     <a href="{{ route('host.tours.edit', $tour->id) }}" class="text-emerald-600 hover:text-emerald-900 transition-colors" title="Sửa">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </a>
-                                    <form action="{{ route('host.tours.destroy', $tour->id) }}" method="POST" class="inline-block delete-form" data-confirm-message="Bạn có chắc chắn muốn xóa tour này?">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Xóa">
+
+                                    @if($tour->bookings_count > 0)
+                                        <button type="button" disabled class="text-gray-300 cursor-not-allowed" title="Tour đã có booking nên không thể xóa">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
-                                    </form>
+                                    @else
+                                        <form action="{{ route('host.tours.destroy', $tour->id) }}" method="POST" class="inline-block delete-form" data-confirm-message="Bạn có chắc chắn muốn xóa tour này?">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Xóa">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
