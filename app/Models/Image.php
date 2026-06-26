@@ -9,10 +9,10 @@ class Image extends Model
 {
     protected $fillable = ['path'];
 
-    public function url(): string
+    public function url(?string $fallback = null): string
     {
         if (! $this->path) {
-            return '';
+            return $fallback ?? asset('images/static/destination-sa-pa.jpg');
         }
 
         $path = ltrim($this->path, '/');
@@ -22,15 +22,35 @@ class Image extends Model
         }
 
         if (str_starts_with($path, 'storage/')) {
+            $storagePath = substr($path, strlen('storage/'));
+
+            return Storage::disk('public')->exists($storagePath)
+                ? asset($path)
+                : ($fallback ?? asset('images/static/destination-sa-pa.jpg'));
+        }
+
+        if (file_exists(public_path($path))) {
             return asset($path);
         }
 
-        return asset('storage/' . $path);
+        return Storage::disk('public')->exists($path)
+            ? asset('storage/' . $path)
+            : ($fallback ?? asset('images/static/destination-sa-pa.jpg'));
     }
 
     public function existsOnPublicDisk(): bool
     {
-        return $this->path && Storage::disk('public')->exists(ltrim($this->path, '/'));
+        if (! $this->path) {
+            return false;
+        }
+
+        $path = ltrim($this->path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        return Storage::disk('public')->exists($path);
     }
 
     public function imageable()

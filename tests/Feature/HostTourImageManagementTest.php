@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Tour;
 use App\Models\User;
+use App\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -97,6 +98,25 @@ class HostTourImageManagementTest extends TestCase
 
         $this->assertDatabaseHas('images', ['id' => $otherImage->id]);
         $this->assertSame('approved', $tour->refresh()->status);
+    }
+
+    public function test_missing_tour_image_uses_local_fallback_url(): void
+    {
+        Storage::fake('public');
+
+        $image = new Image(['path' => 'tours/missing-image.jpg']);
+
+        $this->assertSame(asset('images/static/destination-sa-pa.jpg'), $image->url());
+    }
+
+    public function test_existing_public_tour_image_keeps_storage_url(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('tours/existing-image.jpg', 'image-content');
+
+        $image = new Image(['path' => 'tours/existing-image.jpg']);
+
+        $this->assertSame(asset('storage/tours/existing-image.jpg'), $image->url());
     }
 
     private function createHostAndTour(string $slug = 'host-tour'): array
