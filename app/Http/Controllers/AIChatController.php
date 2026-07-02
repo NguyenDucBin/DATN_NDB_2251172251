@@ -64,7 +64,40 @@ class AIChatController extends Controller
     {
         $question = (string) $messages->last()['content'];
         $normalizedQuestion = $this->normalizeText($question);
+        $previousUserText = $this->normalizeText(
+            $messages
+                ->take(max(0, $messages->count() - 1))
+                ->where('role', 'user')
+                ->pluck('content')
+                ->implode(' ')
+        );
         $conversationText = $this->normalizeText($messages->pluck('content')->implode(' '));
+        $requestedDays = $this->requestedDays($normalizedQuestion);
+        $hasCombinationKeyword = $this->containsAny($normalizedQuestion, [
+            'ket hop', 'ghep', 'di ca', 'ca hai', 'chuyen sang', 'doi sang',
+        ]);
+
+        $latestTourCandidates = $this->tourCandidatesInText($normalizedQuestion, $tours);
+
+        if (! $hasCombinationKeyword) {
+            $singleTour = $this->singleStrongTourCandidate($latestTourCandidates);
+
+            if ($singleTour) {
+                return $this->replyForSingleTour($singleTour, $normalizedQuestion, $requestedDays);
+            }
+
+            if ($latestTourCandidates->count() > 1) {
+                return $this->replyWithMatchedTours($latestTourCandidates->pluck('tour'), $normalizedQuestion);
+            }
+
+            if ($this->isContextualTourQuestion($normalizedQuestion)) {
+                $previousTour = $this->singleStrongTourCandidate($this->tourCandidatesInText($previousUserText, $tours));
+
+                if ($previousTour) {
+                    return $this->replyForSingleTour($previousTour, $normalizedQuestion, $requestedDays);
+                }
+            }
+        }
 
         $mentionedPlaces = $this->mentionedPlaces($conversationText, $tours);
         $latestPlaces = $this->mentionedPlaces($normalizedQuestion, $tours);
@@ -83,12 +116,13 @@ class AIChatController extends Controller
             return null;
         }
 
-        $requestedDays = $this->requestedDays($normalizedQuestion);
-        $isCombinationQuestion = count($mentionedPlaces) > 1 || $this->containsAny($normalizedQuestion, [
-            'ket hop', 'ghep', 'di ca', 'ca hai', 'chuyen sang', 'doi sang',
-        ]);
+        $isCombinationQuestion = count($mentionedPlaces) > 1 || $hasCombinationKeyword;
 
         if ($mentionedPlaces === [] && $hasTourIntent) {
+            if ($this->looksLikeSpecificTourLookup($normalizedQuestion)) {
+                return "Mình chưa tìm thấy tour phù hợp với tên bạn vừa hỏi.\n\nBạn kiểm tra lại tên tour hoặc mở mục Tour trải nghiệm để chọn đúng hành trình nhé.";
+            }
+
             return $this->replyWithAvailableTours($tours);
         }
 
@@ -128,6 +162,75 @@ class AIChatController extends Controller
             $tour->location ?: $place,
             $this->tourSummary($tour)
         );
+    }
+
+    private function replyForSingleTour(Tour $tour, string $normalizedQuestion, ?int $requestedDays = null): string
+    {
+        if ($requestedDays !== null && $requestedDays < (int) $tour->duration_days) {
+            return sprintf(
+                "Tour %s hiện có thời lượng %d ngày %d đêm, nên hệ thống chưa có lựa chọn %d ngày cho tour này.\n\nBạn có thể xem tour hiện có hoặc liên hệ Host/Admin để được tư vấn lịch trình riêng.",
+                $tour->name,
+                (int) $tour->duration_days,
+                (int) $tour->duration_nights,
+                $requestedDays
+            );
+        }
+
+        if ($this->containsAny($normalizedQuestion, ['gia', 'bao nhieu', 'chi phi'])) {
+            return sprintf(
+                "Tour %s hiện có giá %s VNĐ/người.\n\nThời lượng: %d ngày %d đêm.\nĐịa điểm: %s.",
+                $tour->name,
+                number_format((float) $tour->price, 0, ',', '.'),
+                (int) $tour->duration_days,
+                (int) $tour->duration_nights,
+                $tour->location ?: 'chưa cập nhật địa điểm'
+            );
+        }
+
+        if ($this->containsAny($normalizedQuestion, ['thoi luong', 'may ngay', 'may dem', 'lich trinh'])) {
+            return sprintf(
+                "Tour %s có thời lượng %d ngày %d đêm.",
+                $tour->name,
+                (int) $tour->duration_days,
+                (int) $tour->duration_nights
+            );
+        }
+
+        if ($this->containsAny($normalizedQuestion, ['suc chua', 'toi da', 'bao nhieu khach', 'so khach'])) {
+            return sprintf(
+                "Tour %s có sức chứa tối đa %d khách.",
+                $tour->name,
+                (int) $tour->capacity
+            );
+        }
+
+        if ($this->containsAny($normalizedQuestion, ['dat tour', 'dat cho', 'dat lich', 'muon dat'])) {
+            return sprintf(
+                "Bạn có thể mở chi tiết tour %s, chọn ngày khởi hành, số khách rồi bấm đặt tour để tiếp tục thanh toán.",
+                $tour->name
+            );
+        }
+
+        return sprintf(
+            "Tour %s hiện đang mở bán tại %s.\n\nGiá: %s VNĐ/người\nThời lượng: %d ngày %d đêm\nSức chứa tối đa: %d khách\n\nBạn có thể mở chi tiết tour để xem lịch trình và đặt chỗ.",
+            $tour->name,
+            $tour->location ?: 'chưa cập nhật địa điểm',
+            number_format((float) $tour->price, 0, ',', '.'),
+            (int) $tour->duration_days,
+            (int) $tour->duration_nights,
+            (int) $tour->capacity
+        );
+    }
+
+    private function replyWithMatchedTours(Collection $tours, string $normalizedQuestion): string
+    {
+        $intro = $this->containsAny($normalizedQuestion, ['gia', 'bao nhieu', 'chi phi'])
+            ? 'Mình tìm thấy các tour phù hợp với câu hỏi của bạn:'
+            : 'Mình tìm thấy các tour đang mở bán phù hợp với yêu cầu của bạn:';
+
+        return $intro."\n\n"
+            .$tours->take(5)->map(fn (Tour $tour) => $this->tourSummary($tour))->implode("\n")
+            ."\n\nBạn muốn xem kỹ tour nào thì hãy nhắn đúng tên tour đó nhé.";
     }
 
     private function replyWithAvailableTours(Collection $tours): string
@@ -201,10 +304,129 @@ class AIChatController extends Controller
         $normalizedPlace = $this->normalizeText($place);
 
         return $tours->filter(function (Tour $tour) use ($normalizedPlace): bool {
-            $haystack = $this->normalizeText($tour->name.' '.$tour->location.' '.$tour->description);
+            $haystack = $this->normalizeText($tour->name.' '.$tour->location);
 
             return str_contains($haystack, $normalizedPlace);
         })->values();
+    }
+
+    private function tourCandidatesInText(string $normalizedText, Collection $tours): Collection
+    {
+        if (trim($normalizedText) === '') {
+            return collect();
+        }
+
+        return $tours
+            ->map(fn (Tour $tour): array => [
+                'tour' => $tour,
+                'score' => $this->tourMatchScore($normalizedText, $tour),
+            ])
+            ->filter(fn (array $candidate): bool => $candidate['score'] >= 45)
+            ->sortByDesc('score')
+            ->values();
+    }
+
+    private function singleStrongTourCandidate(Collection $candidates): ?Tour
+    {
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        if ($candidates->count() === 1) {
+            return $candidates->first()['tour'];
+        }
+
+        $first = $candidates->first();
+        $second = $candidates->skip(1)->first();
+
+        if ($first['score'] >= 80 && $first['score'] >= $second['score'] + 20) {
+            return $first['tour'];
+        }
+
+        return null;
+    }
+
+    private function tourMatchScore(string $normalizedText, Tour $tour): int
+    {
+        $score = 0;
+        $normalizedName = $this->normalizeText((string) $tour->name);
+        $normalizedSlug = $this->normalizeText(str_replace('-', ' ', (string) $tour->slug));
+
+        if ($normalizedName !== '' && str_contains($normalizedText, $normalizedName)) {
+            $score = max($score, 100);
+        }
+
+        if ($normalizedSlug !== '' && str_contains($normalizedText, $normalizedSlug)) {
+            $score = max($score, 95);
+        }
+
+        $nameScore = $this->tokenOverlapScore($normalizedText, $normalizedName);
+
+        if ($nameScore >= 45) {
+            $score = max($score, $nameScore);
+        }
+
+        foreach ($this->locationCandidates((string) $tour->location) as $locationCandidate) {
+            if (str_contains($normalizedText, $locationCandidate)) {
+                $score = max($score, 60);
+            }
+        }
+
+        return $score;
+    }
+
+    private function tokenOverlapScore(string $normalizedText, string $normalizedName): int
+    {
+        $nameTokens = $this->meaningfulTokens($normalizedName);
+
+        if ($nameTokens === []) {
+            return 0;
+        }
+
+        $textTokens = array_flip($this->meaningfulTokens($normalizedText));
+        $matched = 0;
+
+        foreach ($nameTokens as $token) {
+            if (isset($textTokens[$token])) {
+                $matched++;
+            }
+        }
+
+        if ($matched < min(3, count($nameTokens))) {
+            return 0;
+        }
+
+        return (int) floor(($matched / count($nameTokens)) * 100);
+    }
+
+    private function meaningfulTokens(string $normalizedText): array
+    {
+        $stopWords = [
+            'tour', 'cho', 'toi', 'minh', 'ban', 've', 'nay', 'do', 'hien', 'tai',
+            'gia', 'bao', 'nhieu', 'thong', 'tin', 'muon', 'xem', 'can', 'hoi',
+        ];
+
+        return collect(preg_split('/\s+/', $normalizedText) ?: [])
+            ->filter(fn (string $token): bool => strlen($token) >= 2 && ! in_array($token, $stopWords, true))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function locationCandidates(string $location): array
+    {
+        $normalizedLocation = $this->normalizeText($location);
+
+        if ($normalizedLocation === '') {
+            return [];
+        }
+
+        return collect(array_merge([$normalizedLocation], explode(',', $location)))
+            ->map(fn (string $part): string => $this->normalizeText($part))
+            ->filter(fn (string $part): bool => strlen($part) >= 4)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function mentionedPlaces(string $normalizedText, Collection $tours): array
@@ -231,10 +453,10 @@ class AIChatController extends Controller
                 continue;
             }
 
-            $normalizedLocation = $this->normalizeText($location);
-
-            if (str_contains($normalizedText, $normalizedLocation)) {
-                $places[$normalizedLocation] = $location;
+            foreach ($this->locationCandidates($location) as $locationCandidate) {
+                if (str_contains($normalizedText, $locationCandidate)) {
+                    $places[$locationCandidate] = $locationCandidate;
+                }
             }
         }
 
@@ -316,6 +538,26 @@ class AIChatController extends Controller
         }
 
         return false;
+    }
+
+    private function isContextualTourQuestion(string $normalizedQuestion): bool
+    {
+        return $this->containsAny($normalizedQuestion, [
+            'tour nay', 'tour do', 'tour vua roi', 'hanh trinh nay', 'gia bao nhieu',
+            'may ngay', 'may dem', 'suc chua', 'dat nhu the nao', 'dat tour the nao',
+        ]);
+    }
+
+    private function looksLikeSpecificTourLookup(string $normalizedQuestion): bool
+    {
+        if ($this->containsAny($normalizedQuestion, ['danh sach', 'tat ca', 'cac tour', 'nhung tour', 'dang mo ban'])) {
+            return false;
+        }
+
+        return $this->containsAny($normalizedQuestion, [
+            'cho toi tour', 'toi muon tour', 'tim tour', 'co tour', 'gioi thieu tour',
+            'thong tin tour', 'tour ten',
+        ]);
     }
 
     private function normalizeText(string $text): string

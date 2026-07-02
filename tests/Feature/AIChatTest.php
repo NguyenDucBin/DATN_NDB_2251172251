@@ -162,6 +162,122 @@ class AIChatTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_chatbox_answers_a_specific_tour_name_without_listing_all_tours(): void
+    {
+        $this->createTour([
+            'name' => 'Trải nghiệm làm cốm Tú Lệ',
+            'slug' => 'trai-nghiem-lam-com-tu-le',
+            'location' => 'Tú Lệ, Yên Bái',
+            'price' => 1590000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+            'capacity' => 20,
+        ]);
+        $this->createTour([
+            'name' => 'Tắm lá thuốc người Dao đỏ',
+            'slug' => 'tam-la-thuoc-nguoi-dao-do',
+            'location' => 'Nghĩa Lộ, Yên Bái',
+            'price' => 1690000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+            'capacity' => 20,
+        ]);
+        $this->createTour([
+            'name' => 'Thu hoạch chè Shan Tuyết cổ thụ',
+            'slug' => 'thu-hoach-che-shan-tuyet-co-thu',
+            'location' => 'Suối Giàng, Yên Bái',
+            'price' => 1790000,
+            'duration_days' => 2,
+            'duration_nights' => 2,
+            'capacity' => 15,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'cho tôi tour Tắm lá thuốc người Dao đỏ'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Tắm lá thuốc người Dao đỏ')
+                && str_contains($reply, 'Nghĩa Lộ, Yên Bái')
+                && str_contains($reply, '1.690.000 VNĐ/người')
+                && str_contains($reply, '2 ngày 1 đêm')
+                && ! str_contains($reply, 'Trải nghiệm làm cốm Tú Lệ')
+                && ! str_contains($reply, 'Thu hoạch chè Shan Tuyết cổ thụ'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_lists_only_tours_matching_a_location(): void
+    {
+        $this->createTour([
+            'name' => 'Trải nghiệm làm cốm Tú Lệ',
+            'slug' => 'trai-nghiem-lam-com-tu-le',
+            'location' => 'Tú Lệ, Yên Bái',
+            'price' => 1590000,
+        ]);
+        $this->createTour([
+            'name' => 'Tắm lá thuốc người Dao đỏ',
+            'slug' => 'tam-la-thuoc-nguoi-dao-do',
+            'location' => 'Nghĩa Lộ, Yên Bái',
+            'price' => 1690000,
+        ]);
+        $this->createTour([
+            'name' => 'Tour bản làng Hà Giang',
+            'slug' => 'tour-ban-lang-ha-giang',
+            'location' => 'Hà Giang',
+            'price' => 1000000,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'tour Yên Bái có những tour nào'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Trải nghiệm làm cốm Tú Lệ')
+                && str_contains($reply, 'Tắm lá thuốc người Dao đỏ')
+                && ! str_contains($reply, 'Tour bản làng Hà Giang'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_chatbox_uses_previous_user_tour_context_for_short_follow_up(): void
+    {
+        $this->createTour([
+            'name' => 'Tắm lá thuốc người Dao đỏ',
+            'slug' => 'tam-la-thuoc-nguoi-dao-do',
+            'location' => 'Nghĩa Lộ, Yên Bái',
+            'price' => 1690000,
+            'duration_days' => 2,
+            'duration_nights' => 1,
+            'capacity' => 20,
+        ]);
+        $this->createTour([
+            'name' => 'Tour bản làng Hà Giang',
+            'slug' => 'tour-ban-lang-ha-giang',
+            'location' => 'Hà Giang',
+            'price' => 1000000,
+        ]);
+
+        Http::fake();
+
+        $this->postJson(route('ai.chat'), [
+            'messages' => [
+                ['role' => 'user', 'content' => 'cho tôi tour Tắm lá thuốc người Dao đỏ'],
+                ['role' => 'assistant', 'content' => 'Tour Tắm lá thuốc người Dao đỏ hiện đang mở bán tại Nghĩa Lộ, Yên Bái.'],
+                ['role' => 'user', 'content' => 'tour này giá bao nhiêu'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('reply', fn (string $reply): bool => str_contains($reply, 'Tắm lá thuốc người Dao đỏ')
+                && str_contains($reply, '1.690.000 VNĐ/người')
+                && ! str_contains($reply, 'Tour bản làng Hà Giang'));
+
+        Http::assertNothingSent();
+    }
+
     public function test_chatbox_uses_gemini_with_tour_context_and_conversation_history_for_open_questions(): void
     {
         $this->createTour([
